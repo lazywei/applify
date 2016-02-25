@@ -14,6 +14,28 @@ def searchSongs(term):
     return results["results"]
 
 def buildPlist(songs):
+    tracks = {}
+    track_id = 10000
+    for song in songs:
+        tracks[str(track_id)] = {
+                "Track ID": track_id,
+                "Artist": song["artistName"],
+                "Album": song["collectionName"],
+                "Disc Number": song["discNumber"],
+                "Name": song["trackName"],
+                "Play Count": 0,
+			    "Purchased": True,
+                "Sort Album": song["collectionName"],
+                "Sort Artist": song["artistName"],
+                "Sort Name": song["trackName"],
+                "Track Number": 9,
+                "Track Type": "Remote",
+        }
+        track_id += 2
+
+    playlistItems = [{"Track ID": track["Track ID"]}
+                     for (_, track) in tracks.items()]
+
     pl = {
         "Application Version": "12.3.2.35",
         "Date": datetime.datetime.now(),
@@ -21,30 +43,13 @@ def buildPlist(songs):
         "Major Version": "1",
         "Minor Version": "1",
         "Show Content Ratings": True,
-        "Tracks": {
-            "699": {
-                "Track ID": 699,
-                "Artist": "Avicii",
-                "Album": "Stories",
-                "Disc Number": 1,
-                "Name": "Pure Grinding",
-                "Play Count": 0,
-			    "Purchased": True,
-                "Sort Album": "Stories",
-                "Sort Artist": "Avicii",
-                "Sort Name": "Pure Grinding",
-                "Track Number": 9,
-                "Track Type": "Remote",
-            }
-        },
+        "Tracks": tracks,
         "Playlists": [{
             "All Items": True,
             "Description": "",
             "Name": "TGIF",
             "Playlist ID": 100001,
-            "Playlist Items": [
-                { "Track ID": 699 },
-            ]
+            "Playlist Items": playlistItems,
         }],
     }
     plistStr = plistlib.dumps(pl)
@@ -59,11 +64,11 @@ def buildPlist(songs):
         if children[i].text == "Playlists":
             playlistKey = children[i]
             playlistArr = children[i+1]
+            parent.remove(playlistKey)
+            parent.remove(playlistArr)
+            parent.append(playlistKey)
+            parent.append(playlistArr)
             break
-    parent.remove(playlistKey)
-    parent.remove(playlistArr)
-    parent.append(playlistKey)
-    parent.append(playlistArr)
 
     return etree.tostring(
         plist, pretty_print=True, encoding="UTF-8", xml_declaration=True,
