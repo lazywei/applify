@@ -11,9 +11,9 @@ def searchSongs(term):
     query = urlencode({"term": term, "entity": "musicTrack", "media": "music"})
     resp = requests.get("https://itunes.apple.com/search?{}".format(query))
     results = json.loads(resp.text)
-    return results["results"]
+    return list(filter(lambda res: res["kind"] == "song", results["results"]))
 
-def buildPlist(songs):
+def buildPlist(playlistName, songs):
     tracks = {}
     track_id = 10000
     for song in songs:
@@ -47,7 +47,7 @@ def buildPlist(songs):
         "Playlists": [{
             "All Items": True,
             "Description": "",
-            "Name": "TGIF",
+            "Name": playlistName,
             "Playlist ID": 100001,
             "Playlist Items": playlistItems,
         }],
@@ -79,10 +79,22 @@ def sanitize(songName):
     return songName
 
 def selectSong(songs):
-    return songs[0]
+    print()
+    print("===")
+    print()
 
-def main():
-    songList = ["I Took a Pill in Ibiza (SeeB Remix)"]
+    print("{} songs found. Please select from following candidates:".
+          format(len(songs)))
+    print("  {:30}|  {:30}|  {:15}|".format("Name", "Album", "Artist"))
+    for song in songs:
+        ans = input("  {:30}|  {:30}|  {:15}|  [Y/n]: ".format(
+            song["trackName"], song["collectionName"], song["artistName"]))
+        if ans.lower() == "y" or ans is '':
+            return song
+    return None
+
+def main(playlistName):
+    songList = ["I Took a Pill in Ibiza (SeeB Remix)", "Pure Grinding"]
 
     foundSongs = []
 
@@ -93,11 +105,18 @@ def main():
             print("Can't find {} on Apple Music".format(songName))
             continue
 
-        foundSongs.append(selectSong(candidates))
+        selectedSong = selectSong(candidates)
 
-    plistStr = buildPlist(foundSongs)
+        if selectedSong is None:
+            print("All candidates are not matched ... (skip for now) #TODO")
+            continue
 
-    print(plistStr)
+        foundSongs.append(selectedSong)
+
+    plistStr = buildPlist(playlistName, foundSongs)
+
+    with open("{}.xml".format(playlistName), "w") as f:
+        f.write(plistStr)
 
 if __name__ == '__main__':
-    main()
+    main("TGIF")
